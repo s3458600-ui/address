@@ -5,8 +5,11 @@ import os
 app = Flask(__name__, template_folder='templates')
 app.secret_key = 'your_secret_key_here'
 
+# 실행중인 파이썬 파일과 같은 위치에 DB 파일이 생성되도록 설정
+db_path = os.path.join(os.path.dirname(__file__), 'database.db')
+
 def init_db():
-    with sqlite3.connect('database.db') as conn:
+    with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()
         cursor.execute('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT)')
         cursor.execute('CREATE TABLE IF NOT EXISTS contacts (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, phone TEXT, email TEXT)')
@@ -33,7 +36,7 @@ def home():
 @app.route('/api/login', methods=['POST'])
 def api_login():
     data = request.get_json()
-    with sqlite3.connect('database.db') as conn:
+    with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM users WHERE username = ? AND password = ?", (data.get('username'), data.get('password')))
         user = cursor.fetchone()
@@ -53,7 +56,7 @@ def api_logout():
 def get_contacts():
     if not session.get('logged_in'): return jsonify({'error': '권한없음'}), 403
     search_query = request.args.get('search', '')
-    with sqlite3.connect('database.db') as conn:
+    with sqlite3.connect(db_path) as conn:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         if search_query:
@@ -67,7 +70,7 @@ def get_contacts():
 def add_contact():
     if not session.get('logged_in'): return jsonify({'error': '권한없음'}), 403
     data = request.get_json()
-    with sqlite3.connect('database.db') as conn:
+    with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()
         cursor.execute("INSERT INTO contacts (name, phone, email) VALUES (?, ?, ?)", (data.get('name'), data.get('phone'), data.get('email')))
         conn.commit()
